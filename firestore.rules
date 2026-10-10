@@ -1,0 +1,37 @@
+rules_version='2';
+service cloud.firestore{match /databases/{db}/documents{
+ function member(){return request.auth!=null&&exists(/databases/$(db)/documents/users/$(request.auth.uid));}
+ function role(){return get(/databases/$(db)/documents/users/$(request.auth.uid)).data.role;}
+ function dir(){return role()=='director';}
+ function sales(){return role() in ['rep','am'];}
+ function writer(){return role() in ['rep','am','spec'];}
+ function viewAll(){return role() in ['director','am','viewer'];}
+ match /users/{u}{
+  allow read:if member();
+  allow write:if member()&&dir();
+  allow create:if request.auth!=null&&request.auth.uid==u&&request.resource.data.role=='director'&&!exists(/databases/$(db)/documents/config/setup);}
+ match /config/setup{
+  allow read:if member();
+  allow create:if request.auth!=null&&!exists(/databases/$(db)/documents/config/setup);}
+ match /deals/{d}{
+  allow read:if member();
+  allow create:if member()&&(dir()||(sales()&&request.resource.data.ownerId==request.auth.uid));
+  allow update:if member()&&(dir()||(sales()&&resource.data.ownerId==request.auth.uid&&request.resource.data.ownerId==request.auth.uid));
+  allow delete:if member()&&(dir()||(sales()&&resource.data.ownerId==request.auth.uid));}
+ match /reports/{r}{
+  allow read:if member()&&(viewAll()||resource.data.ownerId==request.auth.uid);
+  allow create:if member()&&writer()&&request.resource.data.ownerId==request.auth.uid;
+  allow update:if member()&&writer()&&resource.data.ownerId==request.auth.uid&&request.resource.data.ownerId==request.auth.uid;
+  allow delete:if member()&&writer()&&resource.data.ownerId==request.auth.uid;}
+ match /rcomments/{c}{
+  allow read:if member()&&(viewAll()||resource.data.ownerId==request.auth.uid);
+  allow create:if member()&&viewAll()&&request.resource.data.byId==request.auth.uid;}
+ match /plans/{p}{
+  allow read:if member()&&(viewAll()||resource.data.ownerId==request.auth.uid);
+  allow create:if member()&&writer()&&request.resource.data.ownerId==request.auth.uid&&p==request.auth.uid+'_'+request.resource.data.date;
+  allow update:if member()&&writer()&&resource.data.ownerId==request.auth.uid&&request.resource.data.ownerId==request.auth.uid&&p==request.auth.uid+'_'+request.resource.data.date;
+  allow delete:if member()&&writer()&&resource.data.ownerId==request.auth.uid;}
+ match /specrep/{s}{
+  allow read:if member();
+  allow create,update,delete:if member()&&role()=='spec';}
+}}
