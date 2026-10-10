@@ -1,6 +1,6 @@
 [English](README.en.md) | [ภาษาไทย](README.md)
 
-# SalesForce – ระบบ Commit ยอดขายทีม (THAISUN PJ Sales)
+# SalesForce – ระบบ Commit ยอดขายทีม
 
 เว็บแอปไฟล์เดียว (`index.html`) สำหรับทีมขาย ใช้ติดตามดีล Commit, รายงานประจำสัปดาห์, แพลนเข้าพบลูกค้า และรายงาน Sales Spec
 ไม่มี build step ใช้ JavaScript ล้วน + Firebase (Authentication และ Firestore) หน้าเว็บอัปเดตข้อมูลแบบ real-time
