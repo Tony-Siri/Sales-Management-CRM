@@ -1,24 +1,35 @@
 [English](README.en.md) | [ภาษาไทย](README.md)
 
-# SalesForce – Sales Team Commit Tracker
+# NARA CRM – Sales Team Commit Tracker (self-hosted)
 
-A single-file web app (`index.html`) for a sales team: track commit deals, weekly reports, customer visit plans and a Sales Spec report.
-No build step. Plain JavaScript plus Firebase (Authentication and Firestore). Data updates in real time. The UI is in Thai.
+A web app for a sales team: commit deals, weekly customer-visit reports (with
+photos), visit plans, a Sales Spec report and team/target management. The UI is in Thai.
+
+This version **no longer uses Firebase**. The backend is [PocketBase](https://pocketbase.io)
+(single binary + SQLite) running on your own VPS behind RunCloud/NGINX, and
+users sign in with their **Google account**. The front-end is still plain
+HTML/JS with no build step and keeps its real-time updates.
 
 ## Features
 
 | Page | What it does |
 |---|---|
-| Overview | Value by status, split by team (PJ-BKK / PJ-PKT), donut chart, stacked bars per person, and closed-won vs. target (%) |
+| Overview | Value by status, split by team (PJ-BKK / PJ-PKT), donut chart, stacked bars per person, closed-won vs target (%) |
 | Pipeline | Kanban board with 5 statuses; drag a card to change its status |
-| Commit | Table of all deals, filterable by team and salesperson, searchable |
-| Weekly report | Daily customer-visit log; managers can add comments under each entry |
+| Commit | Table of all deals, filterable by team and salesperson, searchable. **Document attachments per deal (PDF, Office, images)** |
+| Weekly report | Daily customer-visit log, **photo uploads**, managers can comment under each entry |
 | Customer visit plan | Monthly calendar for daily visit plans |
 | Sales Spec Report | Running project-tracking table, editable by Sales Spec only |
-| Team & targets | The Director manages users, roles, teams and sales targets |
+| Analytics | 12-month won vs target, pipeline at month end, funnel, sales cycle, lost reasons, product mix, visits, leaderboard |
+| Customers | Customer master, customer 360 page (deals, visits, photos, documents, timeline), merge of differently spelled names |
+| Weekly digest | Printable manager summary; optional delivery via LINE or e-mail |
+| Team & targets | The Director adds users by Google e-mail, manages roles, teams, default and monthly targets, analytics settings and data health |
 
-Deal rules: Commit 100%, Commit 80% and "waiting for customer" deals roll over to the next month automatically.
-"Closed won" and "closed lost" deals stay in the month they were closed.
+Every table exports to CSV (opens in Excel). The overview adds a weighted forecast and stale-deal flags. Details in [docs/ANALYTICS.md](docs/ANALYTICS.md).
+
+Deal rules: Commit 100%, Commit 80% and "waiting for customer" deals roll over
+to the next month automatically; "closed won" and "closed lost" stay in the
+month they were closed.
 
 ## Roles and permissions
 
@@ -30,47 +41,63 @@ Deal rules: Commit 100%, Commit 80% and "waiting for customer" deals roll over t
 | Sales Spec | View only (no target) | Own only | Own only | Write/edit | Hidden |
 | Viewer | View only | View everyone + comment | View everyone | View | Hidden |
 
-Permissions are enforced in the database by Firestore Security Rules (`firestore.rules`), not only hidden in the UI.
-People who are not on the team list cannot read any data.
+Permissions are enforced server-side by PocketBase API rules (`pb_migrations/`)
+and hooks (`pb_hooks/`). A Google account that is not on the team list cannot sign in at all.
 
-## Setup (use your own Firebase)
+## Sign-in
 
-1. Create a project in the [Firebase Console](https://console.firebase.google.com) and add a **Web app**.
-2. **Authentication** → Sign-in method → enable **Email/Password**.
-3. **Firestore Database** → Create database (production mode).
-4. Open the **Rules** tab, paste the contents of `firestore.rules`, and click **Publish**.
-5. In `index.html`, replace the placeholder values in `cfg` (near the start of the `<script type="module">` block) with your project's Firebase config.
-6. Deploy it. It must be served over `http://` or `https://`, not `file://`.
-   - **Netlify Drop:** drag the folder containing `index.html` to app.netlify.com/drop
-   - **GitHub Pages:** Settings → Pages → choose a branch
-   - Local test: `python -m http.server 8000`, then open `http://localhost:8000`
-7. Open the site and click **ตั้งค่าครั้งแรก (Director)** ("first-time setup") to create the Director account. This can be done only once.
-8. Go to **ทีมและเป้า** (Team & targets) to add users, roles, teams and targets.
+- Google only; no passwords are stored on your server.
+- The Director adds a member on **Team & targets** by typing their Google e-mail.
+  When that person clicks "Sign in with Google" the account is linked by e-mail.
+- The first Director is defined by `CRM_DIRECTOR_EMAIL` in `.env` (if empty, the
+  first account to sign in becomes Director).
 
-### About usernames
-The login field accepts an email or a plain username. If there is no `@`, the app appends `@salesforce.local` behind the scenes
-(for example, a Viewer can sign in as `Management`). A user removed from the Team page can no longer sign in,
-but the account still exists in Firebase Authentication; delete it in the Console if you want to reuse the same email.
+## Project layout
 
-## Data model (Firestore)
+```
+public/            the web page (index.html, app.js, vendor/pocketbase.es.mjs)
+pb_migrations/     schema, access rules and settings (applied automatically on start)
+pb_hooks/          server-side logic: Google sign-in gating, config from .env
+deploy/            install/update scripts, systemd unit, RunCloud NGINX config, backup
+tests/             integration tests for rules and sign-in (local test server only)
+docs/              all guides (below)
+.env.example       required environment variables
+```
 
-| Collection | Contents |
+## Documentation
+
+| File | Contents |
 |---|---|
-| `users` | Name, email, role (`director` `am` `rep` `spec` `viewer`), team, target |
-| `deals` | Project, customer, owner, value, status, month, activity history |
-| `reports` / `rcomments` | Weekly report entries and manager comments |
-| `plans` | Daily visit plans (document id = `uid_date`) |
-| `specrep` | Rows of the Sales Spec Report |
-| `config/setup` | Marker that the first-time Director setup is done |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Step-by-step RunCloud + NGINX deployment (web app, systemd/Supervisor, NGINX proxy, SSL, Google OAuth) |
+| [docs/MAINTENANCE.md](docs/MAINTENANCE.md) | Backups/restore, updates, rollback, logs, troubleshooting |
+| [docs/ANALYSIS.md](docs/ANALYSIS.md) | Architecture, what changed from the Firebase version, data model |
+| [docs/FEATURES.md](docs/FEATURES.md) | Feature inventory with status |
+| [docs/ANALYTICS.md](docs/ANALYTICS.md) | Analytics audit, added features and metric definitions |
+| [docs/UX-AUDIT.md](docs/UX-AUDIT.md) | UX/UI audit on desktop and mobile (usability, keyboard, WCAG) and a 3-phase improvement plan |
+| [docs/DATAVIZ.md](docs/DATAVIZ.md) | Data-visualization audit (charts, colour, themes, mobile, print) and the changes made |
+| [docs/TESTING.md](docs/TESTING.md) | Test results, what remains unverified, how to run the tests locally |
+| [docs/OUTSTANDING.md](docs/OUTSTANDING.md) | What you still need to provide (domain, Google OAuth client, …) |
+
+## Quick install
+
+```bash
+# on the VPS, inside the RunCloud web app folder (public path = /public, stack = Native NGINX + Custom Config)
+git clone <repo> . && bash deploy/install.sh      # downloads PocketBase, creates .env and the superuser
+nano .env                                          # CRM_APP_URL, GOOGLE_CLIENT_ID/SECRET, CRM_DIRECTOR_EMAIL
+sudo cp deploy/pocketbase.service.rendered /etc/systemd/system/pocketbase-crm.service
+sudo systemctl daemon-reload && sudo systemctl enable --now pocketbase-crm
+# RunCloud: NGiNX Config → Add → type location.root → paste deploy/nginx-proxy.conf → SSL/TLS → Let's Encrypt
+```
+
+Full details in `docs/DEPLOYMENT.md`.
 
 ## Security notes
 
-- A Firebase web config is not a secret, but all security depends on the Rules. Publish `firestore.rules` before real use.
-- Restrict your API key to your site's domain in Google Cloud Console → APIs & Services → Credentials.
-- If you publish your own copy in a public repository, keep placeholder values in `cfg`, or use a private repository.
-- Never put passwords or real customer data in the code or the README.
+- Never commit `.env` or `pb_data/` (already in `.gitignore`).
+- Restrict the admin dashboard `/_/` to your IP addresses in the NGINX config.
+- All attachments are protected: downloadable only by signed-in team members.
+- `CRM_DEV_PASSWORD_AUTH` is for local testing only; never set it in production.
 
-## Free-tier limits
+## License
 
-Firestore (Spark plan) has daily read/write quotas and Netlify (Free) has monthly quotas. Check the Usage page of each service.
-If your data grows large, consider loading only the period being viewed.
+MIT (see `LICENSE`)

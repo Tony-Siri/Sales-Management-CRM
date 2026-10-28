@@ -1,9 +1,13 @@
 [English](README.en.md) | [ภาษาไทย](README.md)
 
-# SalesForce – ระบบ Commit ยอดขายทีม
+# NARA CRM – ระบบ Commit ยอดขายทีม (Self-hosted)
 
-เว็บแอปไฟล์เดียว (`index.html`) สำหรับทีมขาย ใช้ติดตามดีล Commit, รายงานประจำสัปดาห์, แพลนเข้าพบลูกค้า และรายงาน Sales Spec
-ไม่มี build step ใช้ JavaScript ล้วน + Firebase (Authentication และ Firestore) หน้าเว็บอัปเดตข้อมูลแบบ real-time
+เว็บแอปสำหรับทีมขาย ใช้ติดตามดีล Commit, รายงานประจำสัปดาห์ (พร้อมรูปภาพการเข้าพบลูกค้า),
+แพลนเข้าพบลูกค้า, รายงาน Sales Spec และจัดการทีม/เป้าขาย
+
+เวอร์ชันนี้ **ไม่ใช้ Firebase แล้ว** ระบบหลังบ้านคือ [PocketBase](https://pocketbase.io)
+(ไบนารีเดียว + SQLite) ติดตั้งบน VPS ของคุณเอง (RunCloud + NGINX) เข้าสู่ระบบด้วย **บัญชี Google**
+หน้าเว็บยังเป็นไฟล์ HTML/JS ล้วน ไม่มี build step และอัปเดตข้อมูลแบบ real-time เหมือนเดิม
 
 ## ฟีเจอร์
 
@@ -11,11 +15,16 @@
 |---|---|
 | ภาพรวม | สรุปมูลค่าตามสถานะ แยกทีม PJ-BKK / PJ-PKT มีกราฟโดนัท แท่งซ้อนสี และยอดปิดขายเทียบเป้า (%) |
 | Pipeline | Kanban 5 สถานะ ลากการ์ดเพื่อเปลี่ยนสถานะ |
-| Commit | ตารางดีลทั้งหมด กรองตามทีม/เซลส์ ค้นหาได้ |
-| รายงานประจำสัปดาห์ | บันทึกการเข้าพบลูกค้ารายวัน ผู้บริหาร/Director เพิ่ม comment ต่อท้ายได้ |
+| Commit | ตารางดีลทั้งหมด กรองตามทีม/เซลส์ ค้นหาได้ **แนบไฟล์เอกสารในดีลได้ (PDF, Word, Excel, รูป)** |
+| รายงานประจำสัปดาห์ | บันทึกการเข้าพบลูกค้ารายวัน **แนบรูปภาพได้** ผู้บริหาร/Director เพิ่ม comment ต่อท้ายได้ |
 | แพลนเข้าพบลูกค้า | ปฏิทินรายเดือน กรอกแผนรายวัน |
 | Sales Spec Report | ตารางติดตามโครงการต่อเนื่อง กรอกได้เฉพาะ Sales Spec |
-| ทีมและเป้า | Director จัดการผู้ใช้ ตำแหน่ง ทีม และเป้าขาย |
+| วิเคราะห์ | แนวโน้ม 12 เดือนเทียบเป้า, Pipeline ณ สิ้นเดือน, Funnel, รอบการขาย, เหตุผลที่ปิดไม่ได้, กลุ่มสินค้า, การเข้าพบ, ตารางผลงานรายบุคคล |
+| ลูกค้า | ฐานข้อมูลลูกค้า, หน้ารวมข้อมูลลูกค้า (ดีล การเข้าพบ รูป เอกสาร ไทม์ไลน์), รวมชื่อที่สะกดต่างกัน |
+| สรุปสัปดาห์ | สรุปสำหรับผู้บริหาร พิมพ์ได้ ส่งทาง LINE/อีเมลได้ |
+| ทีมและเป้า | Director เพิ่มผู้ใช้ด้วยอีเมล Google กำหนดตำแหน่ง ทีม เป้าตั้งต้นและเป้ารายเดือน, ตั้งค่าการวิเคราะห์, ตรวจสุขภาพข้อมูล |
+
+ทุกหน้าตารางส่งออกเป็น CSV (เปิดด้วย Excel ได้) ภาพรวมแสดงยอดพยากรณ์ถ่วงน้ำหนักและดีลที่ค้างนาน รายละเอียดใน [docs/ANALYTICS.md](docs/ANALYTICS.md)
 
 กติกาของดีล: Commit 100%, Commit 80%, รอลูกค้าพิจารณา จะยกยอดไปเดือนถัดไปเอง
 ส่วน "ปิดขายแล้ว" และ "ปิดไม่ได้" จะตัดจบในเดือนที่ปิด
@@ -30,47 +39,61 @@
 | Sales Spec | ดูอย่างเดียว (ไม่มีเป้า) | ของตัวเองเท่านั้น | ของตัวเองเท่านั้น | กรอก/แก้ไข | ไม่เห็น |
 | ผู้เยี่ยมชม | ดูอย่างเดียว | ดูทุกคน + comment | ดูทุกคน | ดู | ไม่เห็น |
 
-สิทธิ์ถูกบังคับที่ฐานข้อมูลด้วย Firestore Security Rules (`firestore.rules`) ไม่ได้ซ่อนแค่ในหน้าเว็บ
-ผู้ที่ไม่ได้อยู่ในรายชื่อทีมจะอ่านข้อมูลไม่ได้เลย
+สิทธิ์ถูกบังคับที่ฝั่งเซิร์ฟเวอร์ด้วย API rules ของ PocketBase (`pb_migrations/`) และ hooks (`pb_hooks/`)
+บัญชี Google ที่ไม่ได้อยู่ในรายชื่อทีมจะเข้าสู่ระบบไม่ได้เลย
 
-## วิธีติดตั้งเอง
+## การเข้าสู่ระบบ
 
-1. สร้างโปรเจกต์ที่ [Firebase Console](https://console.firebase.google.com) แล้วเพิ่ม **Web app**
-2. **Authentication** → Sign-in method → เปิด **Email/Password**
-3. **Firestore Database** → Create database (โหมด production)
-4. เปิดแท็บ **Rules** วางเนื้อหาจากไฟล์ `firestore.rules` แล้วกด **Publish**
-5. เปิด `index.html` แล้วแก้ค่า `cfg` (Firebase config ของโปรเจกต์ตัวเอง) ใกล้ต้นส่วน `<script type="module">`
-6. นำขึ้นเว็บ (ต้องเปิดผ่าน `http://` หรือ `https://` ไม่ใช่ `file://`)
-   - **Netlify Drop:** ลากโฟลเดอร์ที่มี `index.html` ไปวางที่ app.netlify.com/drop
-   - **GitHub Pages:** Settings → Pages → เลือก branch
-   - ทดสอบในเครื่อง: `python -m http.server 8000` แล้วเปิด `http://localhost:8000`
-7. เปิดเว็บ กด **ตั้งค่าครั้งแรก (Director)** เพื่อสร้างบัญชี Director (ทำได้ครั้งเดียว)
-8. ไปที่ **ทีมและเป้า** เพื่อเพิ่มผู้ใช้ ตำแหน่ง ทีม และเป้า
+- ใช้บัญชี Google เท่านั้น ไม่มีการเก็บรหัสผ่านบนเซิร์ฟเวอร์
+- Director เพิ่มสมาชิกที่หน้า **ทีมและเป้า** โดยกรอกอีเมล Google ของคนนั้น เมื่อคนนั้นกด "เข้าสู่ระบบด้วย Google" ระบบจะจับคู่ด้วยอีเมลอัตโนมัติ
+- บัญชี Director คนแรกกำหนดด้วย `CRM_DIRECTOR_EMAIL` ในไฟล์ `.env` (ถ้าไม่กำหนด คนแรกที่เข้าสู่ระบบจะเป็น Director)
 
-### เรื่องชื่อผู้ใช้
-ช่องล็อกอินรับอีเมลหรือชื่อผู้ใช้ ถ้าไม่มี `@` ระบบจะต่อท้ายเป็น `@salesforce.local` เบื้องหลัง
-(เช่น ผู้เยี่ยมชมล็อกอินด้วยคำว่า `Management`) ผู้ใช้ที่ถูกลบจากหน้า "ทีมและเป้า" จะเข้าระบบไม่ได้อีก
-แต่บัญชีใน Firebase Authentication ยังอยู่ ต้องลบเองที่ Console ถ้าจะใช้อีเมลเดิมซ้ำ
+## โครงสร้างโปรเจกต์
 
-## โครงสร้างข้อมูล (Firestore)
+```
+public/            หน้าเว็บ (index.html, app.js, vendor/pocketbase.es.mjs)
+pb_migrations/     โครงสร้างฐานข้อมูล + rules + settings (รันอัตโนมัติตอนสตาร์ท)
+pb_hooks/          ตรรกะฝั่งเซิร์ฟเวอร์: กรองการล็อกอิน Google, ตั้งค่าจาก .env
+deploy/            สคริปต์ติดตั้ง/อัปเดต, systemd unit, NGINX config สำหรับ RunCloud, backup
+tests/             ชุดทดสอบ rules และการล็อกอิน (รันกับเซิร์ฟเวอร์ทดสอบเท่านั้น)
+docs/              คู่มือทั้งหมด (ด้านล่าง)
+.env.example       ตัวแปรแวดล้อมที่ต้องตั้ง
+```
 
-| Collection | เนื้อหา |
+## เอกสาร
+
+| ไฟล์ | เนื้อหา |
 |---|---|
-| `users` | ชื่อ, อีเมล, ตำแหน่ง (`director` `am` `rep` `spec` `viewer`), ทีม, เป้า |
-| `deals` | ดีล: โครงการ, ลูกค้า, เจ้าของ, มูลค่า, สถานะ, เดือน, ประวัติ |
-| `reports` / `rcomments` | รายงานประจำสัปดาห์ และ comment |
-| `plans` | แพลนเข้าพบลูกค้ารายวัน (id = `uid_วันที่`) |
-| `specrep` | รายการของ Sales Spec Report |
-| `config/setup` | ตัวบอกว่าตั้งค่า Director ครั้งแรกแล้ว |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | ขั้นตอนติดตั้งบน RunCloud + NGINX ทีละขั้น (สร้าง web app, systemd/Supervisor, NGINX proxy, SSL, Google OAuth) |
+| [docs/MAINTENANCE.md](docs/MAINTENANCE.md) | backup/restore, อัปเดต, rollback, log, แก้ปัญหา |
+| [docs/ANALYSIS.md](docs/ANALYSIS.md) | สถาปัตยกรรม, สิ่งที่เปลี่ยนจากเวอร์ชัน Firebase, โครงสร้างข้อมูล |
+| [docs/FEATURES.md](docs/FEATURES.md) | รายการฟีเจอร์และสถานะ |
+| [docs/ANALYTICS.md](docs/ANALYTICS.md) | ผลการตรวจด้านการวิเคราะห์ข้อมูล ฟีเจอร์ที่เพิ่ม และนิยามตัวชี้วัด |
+| [docs/UX-AUDIT.md](docs/UX-AUDIT.md) | ผลการตรวจ UX/UI บนเดสก์ท็อปและมือถือ (การใช้งาน คีย์บอร์ด WCAG) และแผนปรับปรุง 3 ระยะ |
+| [docs/DATAVIZ.md](docs/DATAVIZ.md) | ผลการตรวจด้านการแสดงผลข้อมูล (กราฟ สี โหมดมืด/สว่าง มือถือ การพิมพ์) และสิ่งที่ปรับปรุง |
+| [docs/TESTING.md](docs/TESTING.md) | ผลการทดสอบ สิ่งที่ยังไม่ได้ทดสอบ และวิธีรันทดสอบในเครื่อง |
+| [docs/OUTSTANDING.md](docs/OUTSTANDING.md) | สิ่งที่ต้องเตรียมเอง (โดเมน, Google OAuth client, ฯลฯ) |
+
+## ติดตั้งแบบย่อ
+
+```bash
+# บน VPS ในโฟลเดอร์ web app ของ RunCloud (public path = /public, stack = Native NGINX + Custom Config)
+git clone <repo> . && bash deploy/install.sh      # ดาวน์โหลด PocketBase, สร้าง .env, superuser
+nano .env                                          # CRM_APP_URL, GOOGLE_CLIENT_ID/SECRET, CRM_DIRECTOR_EMAIL
+sudo cp deploy/pocketbase.service.rendered /etc/systemd/system/pocketbase-crm.service
+sudo systemctl daemon-reload && sudo systemctl enable --now pocketbase-crm
+# RunCloud: NGiNX Config → Add → type location.root → วาง deploy/nginx-proxy.conf → SSL/TLS → Let's Encrypt
+```
+
+รายละเอียดทั้งหมดอยู่ใน `docs/DEPLOYMENT.md`
 
 ## ข้อควรระวังด้านความปลอดภัย
 
-- Firebase config ไม่ใช่ความลับ แต่ความปลอดภัยทั้งหมดอยู่ที่ Rules จึงต้อง Publish `firestore.rules` ก่อนเปิดใช้งานจริง
-- ควรจำกัด API key ใน Google Cloud Console → APIs & Services → Credentials ให้ใช้ได้เฉพาะโดเมนของเว็บ
-- ถ้านำโค้ดขึ้น repo แบบ Public ให้เปลี่ยน `cfg` เป็นค่าตัวอย่างก่อน หรือใช้ repo แบบ Private
-- ห้ามใส่รหัสผ่านหรือข้อมูลลูกค้าจริงในโค้ดหรือไฟล์ README
+- ห้าม commit ไฟล์ `.env` และโฟลเดอร์ `pb_data/` (มี `.gitignore` ให้แล้ว)
+- จำกัด IP ที่เข้าหน้าแอดมิน `/_/` ใน NGINX config
+- ไฟล์แนบทั้งหมดเป็นแบบ protected ดาวน์โหลดได้เฉพาะสมาชิกทีมที่ล็อกอินแล้ว
+- ตั้ง `CRM_DEV_PASSWORD_AUTH` เฉพาะเครื่องทดสอบเท่านั้น ห้ามใช้บน production
 
-## ข้อจำกัดของแพ็กเกจฟรี
+## สัญญาอนุญาต
 
-Firestore (Spark) มีโควตาการอ่าน/เขียนต่อวัน และ Netlify (Free) มีโควตารายเดือน ตรวจการใช้งานได้ที่หน้า Usage ของแต่ละบริการ
-ถ้าข้อมูลเยอะขึ้นมากควรปรับให้โหลดเฉพาะช่วงเวลาที่ดู
+MIT (ดู `LICENSE`)

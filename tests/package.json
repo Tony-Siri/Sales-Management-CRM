@@ -1,0 +1,16 @@
+{
+  "name": "salesforce-crm-tests",
+  "private": true,
+  "type": "module",
+  "description": "Integration tests and demo data for the PocketBase backend (local dev server only, never production)",
+  "scripts": {
+    "test:rules": "node rules-test.mjs http://127.0.0.1:8090 admin@local.test adminpass123",
+    "test:analytics": "node analytics-test.mjs http://127.0.0.1:8090 admin@local.test adminpass123",
+    "test:oauth": "node oauth-test.mjs http://127.0.0.1:8090 admin@local.test adminpass123",
+    "test": "npm run test:rules && npm run test:analytics && npm run test:oauth",
+    "seed:demo": "node seed-demo.mjs http://127.0.0.1:8090 admin@local.test adminpass123"
+  },
+  "dependencies": {
+    "pocketbase": "^0.28.1"
+  }
+}

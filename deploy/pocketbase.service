@@ -1,0 +1,39 @@
+# systemd unit for the NARA CRM PocketBase backend.
+# deploy/install.sh renders __APP_DIR__ and __APP_USER__ into
+# deploy/pocketbase.service.rendered; install that file with:
+#   sudo cp deploy/pocketbase.service.rendered /etc/systemd/system/pocketbase-crm.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now pocketbase-crm
+
+[Unit]
+Description=PocketBase backend for NARA CRM
+After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=__APP_USER__
+Group=__APP_USER__
+WorkingDirectory=__APP_DIR__
+EnvironmentFile=__APP_DIR__/.env
+ExecStart=__APP_DIR__/pocketbase serve \
+  --http=127.0.0.1:8090 \
+  --dir=__APP_DIR__/pb_data \
+  --hooksDir=__APP_DIR__/pb_hooks \
+  --migrationsDir=__APP_DIR__/pb_migrations \
+  --encryptionEnv=PB_ENCRYPTION_KEY
+Restart=always
+RestartSec=5s
+LimitNOFILE=8192
+StandardOutput=append:__APP_DIR__/pb_data/pocketbase.log
+StandardError=append:__APP_DIR__/pb_data/pocketbase.log
+
+# hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=__APP_DIR__/pb_data
+
+[Install]
+WantedBy=multi-user.target
